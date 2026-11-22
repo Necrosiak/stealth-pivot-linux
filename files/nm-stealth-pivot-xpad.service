@@ -1,0 +1,11 @@
+[Unit]
+Description=Register Turtle Beach Stealth Pivot receiver with xpad
+After=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/stealth-pivot/bind-xpad
+TimeoutStartSec=20
+
+[Install]
+WantedBy=multi-user.target

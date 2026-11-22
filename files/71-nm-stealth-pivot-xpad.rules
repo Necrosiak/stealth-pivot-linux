@@ -1,0 +1,2 @@
+# Only the receiver gamepad interface; leave its HID interface alone.
+ACTION=="add", SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_interface", ATTRS{idVendor}=="10f5", ATTRS{idProduct}=="7101", ATTR{bInterfaceClass}=="ff", ATTR{bInterfaceSubClass}=="5d", ATTR{bInterfaceProtocol}=="01", TAG+="systemd", ENV{SYSTEMD_WANTS}+="nm-stealth-pivot-xpad.service"

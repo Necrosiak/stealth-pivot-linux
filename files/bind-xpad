@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+exec 9>/run/lock/nm-stealth-pivot-xpad.lock
+flock -w 10 9
+modprobe xpad
+# Exit when xpad already binds this exact gamepad interface natively.
+for iface in /sys/bus/usb/devices/*:*; do
+    parent=${iface%:*}
+    [[ $(cat "$parent/idVendor" 2>/dev/null) == 10f5 ]] || continue
+    [[ $(cat "$parent/idProduct" 2>/dev/null) == 7101 ]] || continue
+    [[ $(cat "$iface/bInterfaceClass" 2>/dev/null) == ff && $(cat "$iface/bInterfaceSubClass" 2>/dev/null) == 5d && $(cat "$iface/bInterfaceProtocol" 2>/dev/null) == 01 ]] || continue
+    [[ $(basename "$(readlink "$iface/driver" || true)") != xpad ]] || exit 0
+done
+ids=/sys/bus/usb/drivers/xpad/new_id
+if ! grep -Eiq '^10f5[[:space:]]+7101([[:space:]]|$)' "$ids"; then
+    printf '10f5 7101 ff\n' > "$ids"
+fi
+# Reprobe only the receiver's gamepad interface, never its separate HID interface.
+for iface in /sys/bus/usb/devices/*:*; do
+    [[ -f $iface/bInterfaceClass ]] || continue
+    parent=${iface%:*}
+    [[ $(cat "$parent/idVendor" 2>/dev/null) == 10f5 ]] || continue
+    [[ $(cat "$parent/idProduct" 2>/dev/null) == 7101 ]] || continue
+    [[ $(cat "$iface/bInterfaceClass") == ff && $(cat "$iface/bInterfaceSubClass") == 5d && $(cat "$iface/bInterfaceProtocol") == 01 ]] || continue
+    [[ -L $iface/driver ]] || printf '%s' "${iface##*/}" > /sys/bus/usb/drivers_probe
+done
